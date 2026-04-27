@@ -21,3 +21,13 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   alarm_actions = [aws_sns_topic.alerts.arn]
   tags          = local.common_tags
 }
+
+resource "aws_cloudwatch_composite_alarm" "overall_health" {
+  alarm_name          = "${var.cluster_name}-overall-health"
+  alarm_description   = "Triggers when either high CPU or ALB target health issues are detected"
+  alarm_rule          = "ALARM(${aws_cloudwatch_metric_alarm.high_cpu.alarm_name}) OR ALARM(${aws_cloudwatch_metric_alarm.alb_unhealthy_hosts.alarm_name})"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  tags                = local.common_tags
+
+  
+}
