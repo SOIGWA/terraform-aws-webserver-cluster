@@ -3,6 +3,8 @@ name: Infrastructure CI
 on:
   pull_request:
     branches: [main]
+
+# Global environment variables available to all jobs
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -10,11 +12,13 @@ env:
   TF_TOKEN_app_terraform_io: ${{ secrets.TFC_API_TOKEN }}
 
 jobs:
- validate:
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Creates a physical credential file on the runner to fix 'terraform test' errors
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -22,41 +26,53 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-2
 
-      - uses: hashicorp/setup-terraform@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.7.0"
-          terraform_wrapper: false # Highly recommended for 'terraform test'
+          terraform_wrapper: false # Disabled to prevent interference with test sub-processes
 
-      - name: Format check
+      - name: Format Check
         run: terraform fmt -check -recursive
 
-      - name: Init
-        # ADD CHDIR HERE
+      - name: Terraform Init
+        # chdir is required so init happens where your provider config lives
         run: terraform -chdir=modules/services/webserver-cluster init -backend=false
 
-      - name: Validate
-        # ADD CHDIR HERE
+      - name: Terraform Validate
         run: terraform -chdir=modules/services/webserver-cluster validate
+
+      - name: Unit Tests
+        # This will now find the credentials initialized in the step above
+        run: terraform -chdir=modules/services/webserver-cluster test
 
   plan:
     runs-on: ubuntu-latest
     needs: validate
-    env:
-      AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      TF_TOKEN_app_terraform_io: ${{ secrets.TFC_API_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Init
-        run: terraform init
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
 
-      - name: Plan
-        run: terraform plan -out=ci.tfplan
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
 
-      - name: Upload plan
+      - name: Terraform Init
+        run: terraform -chdir=modules/services/webserver-cluster init
+
+      - name: Terraform Plan
+        run: terraform -chdir=modules/services/webserver-cluster plan -out=ci.tfplan
+
+      - name: Upload Plan Artifact
         uses: actions/upload-artifact@v4
         with:
           name: terraform-plan
-          path: ci.tfplan
+          path: modules/services/webserver-cluster/ci.tfplan
