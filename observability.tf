@@ -30,5 +30,4 @@ resource "aws_cloudwatch_composite_alarm" "overall_health" {
 
   alarm_actions = [aws_sns_topic.alerts.arn]
   tags          = local.common_tags
-
 }
