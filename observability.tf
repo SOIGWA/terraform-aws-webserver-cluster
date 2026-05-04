@@ -23,7 +23,6 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
 }
 
 resource "aws_cloudwatch_composite_alarm" "overall_health" {
-  add-cloudwatch-alarms-day21
   alarm_name        = "${var.cluster_name}-overall-health"
   alarm_description = "Triggers when either high CPU or unhealthy hosts are detected"
 
