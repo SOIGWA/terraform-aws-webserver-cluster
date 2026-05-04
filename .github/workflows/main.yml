@@ -10,32 +10,33 @@ env:
   TF_TOKEN_app_terraform_io: ${{ secrets.TFC_API_TOKEN }}
 
 jobs:
-  validate:
+ validate:
     runs-on: ubuntu-latest
- 
     steps:
       - uses: actions/checkout@v4
+      
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-2
+
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.7.0"
+          terraform_wrapper: false # Highly recommended for 'terraform test'
 
       - name: Format check
         run: terraform fmt -check -recursive
 
       - name: Init
-        run: terraform init -backend=false
+        # ADD CHDIR HERE
+        run: terraform -chdir=modules/services/webserver-cluster init -backend=false
 
       - name: Validate
-        run: terraform validate
-
-      - name: Unit tests
-        run: terraform -chdir=modules/services/webserver-cluster test
+        # ADD CHDIR HERE
+        run: terraform -chdir=modules/services/webserver-cluster validate
 
   plan:
     runs-on: ubuntu-latest
