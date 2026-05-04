@@ -66,7 +66,7 @@ jobs:
         run: terraform init
 
       - name: Terraform Plan
-        run: terraform plan -out=ci.tfplan
+        run: terraform plan -var="environment=production" -out=ci.tfplan
 
       - name: Upload Plan Artifact
         uses: actions/upload-artifact@v4
