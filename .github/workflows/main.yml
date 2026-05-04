@@ -20,6 +20,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
 
       - name: Format check
         run: terraform fmt -check -recursive
@@ -31,7 +33,7 @@ jobs:
         run: terraform validate
 
       - name: Unit tests
-        run: terraform test
+        run: terraform -chdir=modules/services/webserver-cluster test
 
   plan:
     runs-on: ubuntu-latest
