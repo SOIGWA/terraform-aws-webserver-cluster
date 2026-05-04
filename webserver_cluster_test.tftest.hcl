@@ -1,5 +1,5 @@
 variables {
-  cluster_name  = "ombasa-cluster"
+  cluster_name  = "ombasa-cluster-prod"
   instance_type = "t2.micro"
   min_size      = 2
   max_size      = 10
